@@ -84,7 +84,7 @@ def compress(filename: str, code: dict, pad: int, filename_out: str) -> str:
     f_str = b''
     for c in text:
         buffor += code[c]
-
+    buffor += '0' * (8 - pad)
     for i in range(0, len(buffor), 8):
         f_str += bytes([int(buffor[i:i+8], 2)])
 
@@ -109,6 +109,7 @@ def extract(filename: str, filename_out: str) -> str:
     code_str = s[i+1:int(code_size) + i + 1]
 
     code = eval(code_str)
+    print(code)
 
     pad = code['pad']
     del(code['pad'])
