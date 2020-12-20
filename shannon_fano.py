@@ -5,18 +5,18 @@ from math import log, ceil
 
 def count_bytes(filename: str) -> (dict, int, int):
     try:
-        f = open(filename, 'r')
+        f = open(filename, 'rb')
     except FileNotFoundError:
         print('No file named: ' + filename)
         return -1
     txt = f.read()
     l = list(txt)
-    wc = len(txt.split(' '))
+    #wc = len(txt.split(' '))
     c = Counter(l)
     f.close()
 
     d = dict(c.most_common())
-    return {x: y/len(l) for x, y in d.items()}, wc, len(l), d
+    return {x: y/len(l) for x, y in d.items()}, len(l), d
 
 
 def entropy(letters: dict) -> (dict, float):
@@ -65,34 +65,30 @@ def calculate_padding(code_len: dict, occurrence: dict) -> int:
     return length % 8
 
 
-def compress(filename: str, code: dict, pad: int) -> str:
-    f_in = open(filename, 'r')
-    f_out = open(filename + '.sf', 'wb')
+def compress(filename: str, code: dict, pad: int, filename_out: str) -> str:
+    f_in = open(filename, 'rb')
+    f_out = open(filename_out, 'wb')
     text = f_in.read()
     buffor = ''
+
+    temp_code = {chr(x): y for x, y in code.items()}
     code['pad'] = 8-pad
-    str_code = str(code)
+    temp_code['pad'] = 8-pad
+    str_code = str(temp_code)
+
+    str_code = str(temp_code).encode('utf-8')
 
     f_out.write((str(len(str_code)) + '|').encode('utf-8'))
-    f_out.write(str_code.encode('utf-8'))
-    #print(text)
-    
+    f_out.write(str_code)
+
+    f_str = b''
     for c in text:
         buffor += code[c]
 
-        if len(buffor) >= 8:
-            #byte = chr(int(buffor[:8], 2))
-            #f_out.write(byte.encode('utf-8'))
-            byte = int(buffor[:8], 2)
-            f_out.write(bytes([byte]))
-            buffor = buffor[8:]
-            #print(byte, hex(ord(byte)))
-            #print(hex(byte))
-    
-    buffor += ('0' * (8-pad))
-    byte = int(buffor[:8], 2)
-    f_out.write(bytes([byte]))
-    #print(hex(byte))
+    for i in range(0, len(buffor), 8):
+        f_str += bytes([int(buffor[i:i+8], 2)])
+
+    f_out.write(f_str)
 
     f_in.close()
     f_out.close()
@@ -100,10 +96,9 @@ def compress(filename: str, code: dict, pad: int) -> str:
     return "ok"
 
 
-def extract(filename: str) -> str:
+def extract(filename: str, filename_out: str) -> str:
     f = open(filename, 'rb')
     s = f.read()
-    f_out = open(filename + '.un', 'w')
 
     i = 0
     code_size = ''
@@ -114,7 +109,6 @@ def extract(filename: str) -> str:
     code_str = s[i+1:int(code_size) + i + 1]
 
     code = eval(code_str)
-    #print(type(code), code)
 
     pad = code['pad']
     del(code['pad'])
@@ -123,7 +117,7 @@ def extract(filename: str) -> str:
     #for b in s:
     #    print(hex(b))
 
-    print('--------------')
+    file_str = b''
     buffor = ''
     for i in range(len(s)):
         byte = bin(s[i])[2:]
@@ -137,38 +131,26 @@ def extract(filename: str) -> str:
         while buffor and not flag:
             for c in code.items():
                 if buffor[:len(c[1])] == c[1]:
-                    f_out.write(c[0])
-                    #print(c[0])
+                    char = c[0]
+                    file_str += bytes([ord(char)])
                     buffor = buffor[len(c[1]):]
-                    #print(buffor)
                     flag = False
                     break
                 else:
                     flag = True
                     
-            
-
     f.close()
+    f_out = open(filename_out, 'w')
+    f_out.write(file_str.decode('utf-8'))
     f_out.close()
 
 
-d, wc, bc, occurrence = count_bytes('macbeth-eng_res.txt')
-
-print(d, wc, bc, occurrence)
-
-information_gain, input_entropy = entropy(d)
-
-print(information_gain, input_entropy)
-
-code_len = calculate_code_len(d)
-
-print(code_len)
-
-code = create_code(code_len)
-
-print(code)
-
-compress('macbeth-eng_res.txt', code, calculate_padding(code_len, occurrence))
-extract('macbeth-eng_res.txt.sf')
+def test():
+    d, bc, occurrence = count_bytes('makbet-pl.txt')
+    information_gain, input_entropy = entropy(d)
+    code_len = calculate_code_len(d)
+    code = create_code(code_len)
+    compress('makbet-pl.txt', code, calculate_padding(code_len, occurrence))
+    extract('makbet-pl.txt.sf')
 
 

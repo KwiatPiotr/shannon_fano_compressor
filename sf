@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+import sys
+import argparse
+from shannon_fano import *
+
+parser = argparse.ArgumentParser(description='SF is implementation of Shannon-Fano compression algorithm.')
+parser.add_argument('--compress', '-c', action='store_true', default=False, help='Compress file')
+parser.add_argument('--extract', '-e', action='store_true', default=False, help='Extract file')
+parser.add_argument('--file', '-f', action='store', default='', help='File to compress or extract', required=True)
+parser.add_argument('--out', '-o', action='store', default='', help='File to save result', required=False)
+
+args = parser.parse_args()
+
+if args.compress:
+    print('compress')
+    print(args.file)
+    
+    filename_out = args.file + '.sf'
+    if args.out:
+        filename_out = args.out
+    print(filename_out)
+
+    d, bc, occurrence = count_bytes(args.file)
+
+    information_gain, input_entropy = entropy(d)
+
+    code_len = calculate_code_len(d)
+
+    code = create_code(code_len)
+
+    compress(args.file, code, calculate_padding(code_len, occurrence), filename_out)
+
+    sys.exit(0)
+
+    
+if args.extract:
+    print('extract')
+    print(args.file)
+
+    filename_out = args.file + '.un'
+    if args.out:
+        filename_out = args.out
+    print(filename_out)
+    
+    extract(args.file, filename_out)
+    sys.exit(0)
+
+print('No function: -c --compress, -e --extract')
