@@ -141,8 +141,8 @@ def extract(filename: str, filename_out: str) -> str:
                     flag = True
                     
     f.close()
-    f_out = open(filename_out, 'w')
-    f_out.write(file_str.decode('utf-8'))
+    f_out = open(filename_out, 'wb')
+    f_out.write(file_str)
     f_out.close()
 
 
